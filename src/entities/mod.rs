@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod audit;
 pub mod employee;
 pub mod partner;
 pub mod state;

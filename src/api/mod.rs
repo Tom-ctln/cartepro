@@ -2,6 +2,7 @@ use crate::models::Role;
 use actix_web::web;
 use utoipa::OpenApi;
 
+pub mod audit;
 mod auth;
 mod buisness;
 mod crud;

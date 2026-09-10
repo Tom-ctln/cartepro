@@ -42,3 +42,19 @@ CREATE TABLE transaction (
   partner_id UUID REFERENCES partner(id),
   employee_id UUID REFERENCES employee(id)
 );
+
+CREATE TABLE audit (
+    id UUID PRIMARY KEY,
+    occurred_at BIGINT NOT NULL,
+    actor_id UUID,
+    actor_role VARCHAR(50),
+    action VARCHAR(100) NOT NULL,
+    target_type VARCHAR(50),
+    target_id VARCHAR(255),
+    payload JSONB,
+    ip VARCHAR(45),
+    previous_hash VARCHAR(64) NOT NULL
+);
+
+REVOKE UPDATE, DELETE ON audit FROM tickettout; 
+GRANT INSERT, SELECT ON audit TO tickettout;

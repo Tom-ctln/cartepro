@@ -1,11 +1,6 @@
 use crate::{
     db::{get_one, insert},
-    entities::{
-        employee::{self as Employee},
-        partner::{self as Partner},
-        state::{self as State},
-        user::{self as User},
-    },
+    entities::{employee as Employee, partner as Partner, state as State, user as User},
     models::Role,
 };
 use actix_web::{HttpResponse, Responder, post, web};

@@ -1,16 +1,20 @@
-use actix_web::{HttpResponse, Responder, post, web};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-              TransactionTrait, ActiveValue, DbErr};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use utoipa::ToSchema;
-use chrono;
 use crate::{
     db::{get_one, insert},
-    entities::{employee::{self as Employee}, partner::{self as Partner},
-               user::{self as User}, state::{self as State}},
+    entities::{
+        employee::{self as Employee},
+        partner::{self as Partner},
+        state::{self as State},
+        user::{self as User},
+    },
     models::Role,
 };
+use actix_web::{HttpResponse, Responder, post, web};
+use sea_orm::{
+    ActiveValue, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, TransactionTrait,
+};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Deserialize, ToSchema)]
 pub struct LoginRequest {
@@ -184,7 +188,7 @@ pub async fn register(
                 id: ActiveValue::Set(inserted_user.id),
                 state: ActiveValue::Set("waiting_activation".to_string()),
                 reason: ActiveValue::Set(Some("Waiting for verification".to_string())),
-                modified_at: ActiveValue::Set(chrono::Utc::now().timestamp())
+                modified_at: ActiveValue::Set(chrono::Utc::now().timestamp()),
             };
 
             match insert::<Partner::Entity, _>(&txn, partner_model).await {
@@ -216,9 +220,5 @@ pub async fn register(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/auth")
-            .service(login)
-            .service(register)
-        );
+    cfg.service(web::scope("/auth").service(login).service(register));
 }

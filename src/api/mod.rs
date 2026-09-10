@@ -1,18 +1,16 @@
+use crate::models::Role;
 use actix_web::web;
-use crate::{
-    models::{Role}
-};
 use utoipa::OpenApi;
 
 mod auth;
 mod buisness;
 mod crud;
+mod csv;
+mod docs;
 mod echo;
 mod health;
 mod resources;
 mod user;
-mod csv;
-mod docs;
 mod users;
 
 use crate::entities::{admin, employee, partner, state};
@@ -25,6 +23,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(echo::echo)
             .service(csv::transactions_to_csv)
             .configure(user::configure)
+            .service(buisness::get_partner_directory)
             .service(buisness::get_pending_partners)
             .service(buisness::get_users)
             .service(buisness::process_payment)

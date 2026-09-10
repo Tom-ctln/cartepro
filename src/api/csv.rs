@@ -1,8 +1,7 @@
 use crate::{
     db::get_all,
-    entities::transaction::{self as Transaction}
+    entities::transaction::{self as Transaction},
 };
-use utoipa;
 use actix_web::{HttpResponse, Responder, get, web};
 use csv::Writer;
 use sea_orm::DatabaseConnection;
@@ -28,9 +27,7 @@ pub async fn transactions_to_csv(db: web::Data<DatabaseConnection>) -> impl Resp
     }
 
     match writer.into_inner() {
-        Ok(file) => HttpResponse::Ok()
-            .content_type("text/csv")
-            .body(file),
+        Ok(file) => HttpResponse::Ok().content_type("text/csv").body(file),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }

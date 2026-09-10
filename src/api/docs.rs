@@ -1,10 +1,7 @@
-use crate::{
-    api::ApiDoc
-};
+use crate::api::ApiDoc;
 use actix_web::{HttpResponse, Responder, get, web};
-use serde_json;
 use utoipa::OpenApi;
-use utoipa_swagger_ui::{SwaggerUi, Config};
+use utoipa_swagger_ui::{Config, SwaggerUi};
 
 #[get("/openapi.json")]
 async fn openapi() -> impl Responder {
@@ -19,8 +16,7 @@ async fn openapi() -> impl Responder {
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/docs")
-        .service(openapi)
-        .service(SwaggerUi::new("/swagger-ui/{_:.*}").config(Config::new(["/api/docs/openapi.json"])))
-    );
+    cfg.service(web::scope("/docs").service(openapi).service(
+        SwaggerUi::new("/swagger-ui/{_:.*}").config(Config::new(["/api/docs/openapi.json"])),
+    ));
 }

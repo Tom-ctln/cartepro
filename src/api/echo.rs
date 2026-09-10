@@ -1,5 +1,4 @@
 use actix_web::{HttpResponse, Responder, post};
-use utoipa;
 
 #[utoipa::path(
     post,

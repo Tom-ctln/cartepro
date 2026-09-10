@@ -1,17 +1,18 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult,
-    QueryFilter, QuerySelect, RelationTrait, TransactionTrait
+    QueryFilter, QuerySelect, RelationTrait, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{
+    db::{get_by_id, get_one, insert},
     entities::{employee, partner, state, transaction, user},
-    db::{insert, get_one, get_by_id},
 };
 
+#[allow(unused)]
 #[derive(ToSchema)]
 pub struct ErrorResponse {
     pub error: String,
@@ -199,40 +200,56 @@ pub struct TokenBody {
 #[post("/begin/payment")]
 pub async fn begin_payment(req: HttpRequest, db: web::Data<DatabaseConnection>) -> impl Responder {
     let Some(auth) = req.headers().get("Authorization") else {
-        return HttpResponse::Unauthorized().json(serde_json::json!({ "error": "Missing Authorization header" }));
+        return HttpResponse::Unauthorized()
+            .json(serde_json::json!({ "error": "Missing Authorization header" }));
     };
 
     let Ok(auth) = auth.to_str() else {
-        return HttpResponse::Unauthorized().json(serde_json::json!({ "error": "Invalid Authorization header" }));
+        return HttpResponse::Unauthorized()
+            .json(serde_json::json!({ "error": "Invalid Authorization header" }));
     };
 
     let Some(token) = auth.strip_prefix("Bearer ") else {
-        return HttpResponse::Unauthorized().json(serde_json::json!({ "error": "Invalid token format" }));
+        return HttpResponse::Unauthorized()
+            .json(serde_json::json!({ "error": "Invalid token format" }));
     };
 
     let Ok(uuid) = uuid::Uuid::parse_str(token) else {
-        return HttpResponse::BadRequest().json(serde_json::json!({ "error": "Invalid UUID format" }));
+        return HttpResponse::BadRequest()
+            .json(serde_json::json!({ "error": "Invalid UUID format" }));
     };
 
     let query = user::Entity::find().filter(user::Column::Id.eq(uuid));
 
     match get_one(db.get_ref(), query).await {
         Ok(Some(u)) => {
-            let mut employee: employee::ActiveModel = match get_by_id::<employee::Entity, _>(db.get_ref(), u.id).await {
-                Ok(Some(emp)) => employee::ActiveModel::from(employee::Model::from(emp)),
-                Ok(None) => return HttpResponse::NotFound().json(serde_json::json!({ "error": "Employee record not found" })),
-                Err(e) => return HttpResponse::InternalServerError().json(serde_json::json!({ "error": e.to_string() }))
+            let mut employee: employee::ActiveModel =
+                match get_by_id::<employee::Entity, _>(db.get_ref(), u.id).await {
+                    Ok(Some(emp)) => employee::ActiveModel::from(emp),
+                    Ok(None) => {
+                        return HttpResponse::NotFound()
+                            .json(serde_json::json!({ "error": "Employee record not found" }));
+                    }
+                    Err(e) => {
+                        return HttpResponse::InternalServerError()
+                            .json(serde_json::json!({ "error": e.to_string() }));
+                    }
+                };
+            let token_body = TokenBody {
+                qr_token: Uuid::new_v4().to_string(),
             };
-            let token_body = TokenBody { qr_token: Uuid::new_v4().to_string() };
             employee.qr_token = ActiveValue::Set(Some(token_body.qr_token.clone()));
             employee.qr_token_created_at = ActiveValue::Set(Some(chrono::Utc::now().timestamp()));
             match insert::<employee::Entity, _>(db.get_ref(), employee).await {
                 Ok(_) => HttpResponse::Ok().json(token_body),
-                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({ "error": e.to_string() })),
+                Err(e) => HttpResponse::InternalServerError()
+                    .json(serde_json::json!({ "error": e.to_string() })),
             }
         }
         Ok(None) => HttpResponse::NotFound().json(serde_json::json!({ "error": "User not found" })),
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({ "error": e.to_string() })),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({ "error": e.to_string() }))
+        }
     }
 }
 
